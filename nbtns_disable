@@ -1,0 +1,19 @@
+@echo off
+:checkpermissions
+net.exe session >nul 2>&1 || (echo Ошибка! Запустите скрипт от имени администратора. & exit /b 1)
+set "hive=HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces"
+set "regv=NetbiosOptions"
+setlocal EnableDelayedExpansion
+set "iface=" & set "nbopt="
+for /f "tokens=*" %%a in ('reg.exe query "%hive%" /s /v "%regv%" 2^>nul') do (
+	set "regd=%%~a"
+	if not "!regd!" == "!regd:%hive%=!" (set "iface=!regd!") else if not "!regd!" == "!regd:%regv%=!" (set "nbopt=!regd!")
+	if defined iface if defined nbopt (
+		for /f "tokens=3" %%b in ("!nbopt!") do if not "%%~b" == "0x2" (
+			echo ^> !iface!\%regv% = 2
+			reg.exe add "!iface!" /v "%regv%" /t REG_DWORD /d 2 /f
+		)
+		set "iface=" & set "nbopt="
+	)
+)
+endlocal
