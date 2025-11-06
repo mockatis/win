@@ -1,0 +1,5 @@
+set file="C:\Users\Public\test.txt"
+for /f "tokens=2 delims=:" %%a in ('sc query state^=all ^| findstr "WireGuardTunnel*"') do set "ServiceName=%%~na"
+echo %%~na
+)
+echo %ServiceName%
