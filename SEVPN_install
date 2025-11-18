@@ -1,0 +1,40 @@
+@echo off
+
+setlocal enableextensions
+
+net session >nul 2>&1
+if %errorLevel% == 0 (
+echo Administrative permissions verified.
+goto run_program
+) else (
+echo Current permissions insufficient. Please reexecute with elevated privileges.
+echo.
+echo Press any key to exit.
+)
+
+goto end
+
+:run_program
+NET STOP SEVPNCLIENT >NUL
+copy %~dp0\sevpn431.dat %TEMP%\sevpn431.exe
+%TEMP%\sevpn431.exe -o"C:\Program Files\SoftEther VPN Client" -y
+sc query SEVPNCLIENT >NUL
+IF %ERRORLEVEL% NEQ 0 (
+sc create SEVPNCLIENT binPath="\"C:\Program Files\SoftEther VPN Client\vpnclient_x64.exe\" /service" DisplayName="Softether VPN Client" start=auto
+) else (
+sc config SEVPNCLIENT binPath="\"C:\Program Files\SoftEther VPN Client\vpnclient_x64.exe\" /service" DisplayName="Softether VPN Client" start=auto
+)
+
+del %TEMP%\sevpn431.exe
+
+reg ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v "SoftEther VPN Client UI Helper" /t REG_SZ /d "\"C:\Program Files\SoftEther VPN Client\vpnclient_x64.exe\" /uihelp" /f
+reg ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run /v "SoftEther VPN Client UI Helper" /t REG_BINARY /d 020000000000000000000000 /f
+
+NET START SEVPNCLIENT
+timeout /t 5 /nobreak >nul
+
+cd /d "C:\Program Files\SoftEther VPN Client"
+vpncmgr_x64.exe
+vpncmd_x64.exe localhost /CLIENT /IN:dev.inc
+NET START SEVPNCLIENT
+end
